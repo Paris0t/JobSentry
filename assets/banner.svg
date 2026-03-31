@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" fill="none">
+  <defs>
+    <linearGradient id="bannerBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d1b3e"/>
+      <stop offset="100%" style="stop-color:#1a237e"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#42a5f5"/>
+      <stop offset="100%" style="stop-color:#4fc3f7"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="800" height="200" rx="16" fill="url(#bannerBg)"/>
+  <!-- Subtle grid lines -->
+  <line x1="0" y1="50" x2="800" y2="50" stroke="#1565c0" stroke-width="0.5" opacity="0.15"/>
+  <line x1="0" y1="100" x2="800" y2="100" stroke="#1565c0" stroke-width="0.5" opacity="0.15"/>
+  <line x1="0" y1="150" x2="800" y2="150" stroke="#1565c0" stroke-width="0.5" opacity="0.15"/>
+  <line x1="200" y1="0" x2="200" y2="200" stroke="#1565c0" stroke-width="0.5" opacity="0.15"/>
+  <line x1="400" y1="0" x2="400" y2="200" stroke="#1565c0" stroke-width="0.5" opacity="0.15"/>
+  <line x1="600" y1="0" x2="600" y2="200" stroke="#1565c0" stroke-width="0.5" opacity="0.15"/>
+  <!-- Shield icon -->
+  <g transform="translate(60, 30)">
+    <path d="M50 10 L90 26 L90 66 C90 90 70 106 50 118 C30 106 10 90 10 66 L10 26 Z"
+          fill="none" stroke="#42a5f5" stroke-width="2.5" opacity="0.8"/>
+    <!-- Radar circles inside shield -->
+    <circle cx="50" cy="60" r="20" fill="none" stroke="#4fc3f7" stroke-width="1" opacity="0.4"/>
+    <circle cx="50" cy="60" r="35" fill="none" stroke="#4fc3f7" stroke-width="0.8" opacity="0.2"/>
+    <!-- Radar sweep -->
+    <path d="M50 60 L70 42" stroke="#4fc3f7" stroke-width="2" opacity="0.8"/>
+    <!-- Center dot -->
+    <circle cx="50" cy="60" r="5" fill="#4fc3f7"/>
+    <circle cx="50" cy="60" r="2.5" fill="#e3f2fd"/>
+    <!-- Blips -->
+    <circle cx="65" cy="48" r="3" fill="#4caf50" opacity="0.9"/>
+    <circle cx="38" cy="72" r="2.5" fill="#66bb6a" opacity="0.7"/>
+  </g>
+  <!-- Title -->
+  <text x="190" y="95" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
+        font-size="56" font-weight="800" fill="#e3f2fd" letter-spacing="3">
+    JobSentry
+  </text>
+  <!-- Tagline -->
+  <text x="190" y="130" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
+        font-size="18" fill="#90caf9" letter-spacing="1" opacity="0.9">
+    AI-powered job discovery for cleared professionals
+  </text>
+  <!-- Accent line -->
+  <rect x="190" y="142" width="120" height="3" rx="1.5" fill="url(#accent)" opacity="0.6"/>
+</svg>
