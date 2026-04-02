@@ -59,3 +59,26 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Load settings from environment."""
     return Settings()
+
+
+def validate_settings() -> list[str]:
+    """Check configuration and return list of warnings."""
+    settings = get_settings()
+    warnings = []
+
+    if not settings.anthropic_api_key:
+        warnings.append("JOBSENTRY_ANTHROPIC_API_KEY not set — AI matching won't work")
+
+    if not settings.smtp_username or not settings.smtp_password:
+        warnings.append("SMTP not configured — email digests won't work")
+    elif not settings.notify_emails:
+        warnings.append("JOBSENTRY_NOTIFY_EMAILS not set — no email recipients")
+
+    if not settings.telegram_bot_token or not settings.telegram_chat_id:
+        warnings.append("Telegram not configured — Telegram alerts won't work")
+
+    profile_path = settings.get_profile_path()
+    if not profile_path.exists():
+        warnings.append("No profile found — run 'jobsentry profile init'")
+
+    return warnings

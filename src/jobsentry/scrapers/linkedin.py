@@ -4,8 +4,6 @@ import re
 from datetime import datetime, timedelta
 from urllib.parse import quote_plus
 
-from playwright.async_api import BrowserContext
-
 from jobsentry.automation.browser import BrowserManager
 from jobsentry.models.job import JobListing
 from jobsentry.scrapers.base import BaseScraper
@@ -137,19 +135,14 @@ class LinkedInScraper(BaseScraper):
 
             # Company
             company_el = card.locator(
-                ".base-search-card__subtitle, "
-                "[class*='company'], "
-                "[class*='subtitle'] a"
+                ".base-search-card__subtitle, [class*='company'], [class*='subtitle'] a"
             ).first
             company = "Unknown"
             if await company_el.count() > 0:
                 company = (await company_el.text_content() or "Unknown").strip()
 
             # Location
-            location_el = card.locator(
-                ".job-search-card__location, "
-                "[class*='location']"
-            ).first
+            location_el = card.locator(".job-search-card__location, [class*='location']").first
             location = ""
             if await location_el.count() > 0:
                 location = (await location_el.text_content() or "").strip()
@@ -197,16 +190,12 @@ class LinkedInScraper(BaseScraper):
             await page.wait_for_load_state("networkidle", timeout=15000)
 
             # Title
-            title_el = page.locator(
-                "h1, .top-card-layout__title, [class*='job-title']"
-            ).first
+            title_el = page.locator("h1, .top-card-layout__title, [class*='job-title']").first
             title = (await title_el.text_content() or "Unknown").strip()
 
             # Company
             company_el = page.locator(
-                ".topcard__org-name-link, "
-                "[class*='company-name'], "
-                "a[class*='topcard__org']"
+                ".topcard__org-name-link, [class*='company-name'], a[class*='topcard__org']"
             ).first
             company = "Unknown"
             if await company_el.count() > 0:
@@ -214,9 +203,7 @@ class LinkedInScraper(BaseScraper):
 
             # Location
             location_el = page.locator(
-                ".topcard__flavor--bullet, "
-                "[class*='location'], "
-                "span[class*='topcard__flavor']"
+                ".topcard__flavor--bullet, [class*='location'], span[class*='topcard__flavor']"
             ).first
             location = ""
             if await location_el.count() > 0:
@@ -224,9 +211,7 @@ class LinkedInScraper(BaseScraper):
 
             # Description
             desc_el = page.locator(
-                ".description__text, "
-                "[class*='description'], "
-                ".show-more-less-html__markup"
+                ".description__text, [class*='description'], .show-more-less-html__markup"
             ).first
             description = ""
             if await desc_el.count() > 0:

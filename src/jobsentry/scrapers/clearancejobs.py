@@ -4,8 +4,6 @@ import re
 from datetime import datetime
 from urllib.parse import quote_plus
 
-from playwright.async_api import BrowserContext
-
 from jobsentry.automation.browser import BrowserManager
 from jobsentry.models.job import JobListing
 from jobsentry.scrapers.base import BaseScraper
@@ -52,6 +50,7 @@ class ClearanceJobsScraper(BaseScraper):
 
                 # Auto-login if redirected to login page
                 from jobsentry.config import get_settings as _gs
+
                 bm = BrowserManager(data_dir=_gs().data_dir, headless=True)
                 if bm.is_login_page("clearancejobs", page.url):
                     await bm.auto_login(page, "clearancejobs")
@@ -68,7 +67,7 @@ class ClearanceJobsScraper(BaseScraper):
                 has_next = await page.locator(
                     'button[aria-label="Next page"], '
                     'a[aria-label="Next page"], '
-                    '.el-pagination .btn-next:not([disabled])'
+                    ".el-pagination .btn-next:not([disabled])"
                 ).count()
                 if not has_next:
                     break
@@ -184,7 +183,11 @@ class ClearanceJobsScraper(BaseScraper):
             await BrowserManager.human_delay(page)
 
             title_el = page.locator("h1").first
-            title = (await title_el.text_content() or "Unknown").strip() if await title_el.count() else "Unknown"
+            title = (
+                (await title_el.text_content() or "Unknown").strip()
+                if await title_el.count()
+                else "Unknown"
+            )
 
             company_el = page.locator(
                 ".job-search-list-item-desktop__company-name, "

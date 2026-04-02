@@ -89,12 +89,13 @@ Type=oneshot
 User=jobsentry
 WorkingDirectory=/home/jobsentry/JobSentry
 Environment=HOME=/home/jobsentry
-ExecStart=/home/jobsentry/JobSentry/.venv/bin/bash -c '\
-    source .venv/bin/activate && \
+ExecStart=/bin/bash -c '\
+    source /home/jobsentry/JobSentry/.venv/bin/activate && \
     jobsentry jobs search -b clearancejobs -p 3 && \
     jobsentry jobs search -b indeed -p 2 && \
     jobsentry jobs fetch && \
     jobsentry jobs match && \
+    jobsentry notify digest || true && \
     jobsentry notify summary'
 StandardOutput=append:/home/jobsentry/.local/share/jobsentry/logs/service.log
 StandardError=append:/home/jobsentry/.local/share/jobsentry/logs/service.log
@@ -102,11 +103,11 @@ UNIT
 
 cat > /etc/systemd/system/jobsentry.timer << 'TIMER'
 [Unit]
-Description=Run JobSentry twice daily
+Description=Run JobSentry every 5 days
 
 [Timer]
-OnCalendar=*-*-* 08:00:00
-OnCalendar=*-*-* 18:00:00
+OnBootSec=15min
+OnUnitActiveSec=5d
 Persistent=true
 
 [Install]

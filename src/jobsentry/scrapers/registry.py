@@ -9,9 +9,11 @@ _SCRAPERS: dict[str, type[BaseScraper]] = {}
 
 def register(name: str):
     """Decorator to register a scraper class."""
+
     def wrapper(cls: type[BaseScraper]):
         _SCRAPERS[name] = cls
         return cls
+
     return wrapper
 
 

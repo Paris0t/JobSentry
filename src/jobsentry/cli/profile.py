@@ -1,6 +1,5 @@
 """Profile management CLI commands."""
 
-import json
 import os
 import subprocess
 from pathlib import Path
@@ -193,16 +192,28 @@ def show():
     table.add_row("", "")
     table.add_row("Experience", f"{profile.years_experience} years")
     table.add_row("Skills", ", ".join(profile.skills) if profile.skills else "—")
-    table.add_row("Certifications", ", ".join(profile.certifications) if profile.certifications else "—")
+    table.add_row(
+        "Certifications", ", ".join(profile.certifications) if profile.certifications else "—"
+    )
     table.add_row("", "")
-    table.add_row("Desired Titles", ", ".join(profile.desired_titles) if profile.desired_titles else "—")
-    table.add_row("Desired Locations", ", ".join(profile.desired_locations) if profile.desired_locations else "—")
+    table.add_row(
+        "Desired Titles", ", ".join(profile.desired_titles) if profile.desired_titles else "—"
+    )
+    table.add_row(
+        "Desired Locations",
+        ", ".join(profile.desired_locations) if profile.desired_locations else "—",
+    )
     table.add_row("Work Type", ", ".join(w.value for w in profile.work_preferences))
     table.add_row("Min Salary", f"${profile.min_salary:,}" if profile.min_salary else "—")
-    table.add_row("Excluded Companies", ", ".join(profile.excluded_companies) if profile.excluded_companies else "—")
+    table.add_row(
+        "Excluded Companies",
+        ", ".join(profile.excluded_companies) if profile.excluded_companies else "—",
+    )
     table.add_row("", "")
     table.add_row("Resume PDF", profile.resume_pdf_path or "—")
-    table.add_row("Resume Text", f"{len(profile.resume_text)} chars" if profile.resume_text else "—")
+    table.add_row(
+        "Resume Text", f"{len(profile.resume_text)} chars" if profile.resume_text else "—"
+    )
 
     console.print(table)
 

@@ -31,3 +31,5 @@ class JobTable(Base):
     application_count: Mapped[int | None] = mapped_column(Integer)
     match_score: Mapped[float | None] = mapped_column(Float)
     match_reasoning: Mapped[str | None] = mapped_column(Text)
+    notified_at: Mapped[datetime | None] = mapped_column(DateTime)
+    applied_at: Mapped[datetime | None] = mapped_column(DateTime)

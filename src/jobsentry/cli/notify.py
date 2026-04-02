@@ -1,5 +1,8 @@
 """Telegram notification CLI commands."""
 
+from datetime import datetime, timedelta
+from typing import Optional
+
 import typer
 from rich.console import Console
 
@@ -13,7 +16,6 @@ console = Console()
 @app.command()
 def test():
     """Send a test notification to verify Telegram is configured."""
-    settings = get_settings()
     notifier = TelegramNotifier()
 
     if not notifier.enabled:
@@ -71,6 +73,12 @@ def summary():
 def digest(
     top: int = typer.Option(10, "--top", "-n", help="Number of top matches to include"),
     threshold: float = typer.Option(0.65, "--threshold", "-t", help="Minimum match score"),
+    since: Optional[str] = typer.Option(
+        None,
+        "--since",
+        "-s",
+        help="Include jobs from last N days (e.g. '7d', '30d') — overrides notified filter",
+    ),
 ):
     """Send a digest of top job matches via email (with resume attached)."""
     from jobsentry.db.repository import JobRepository
@@ -94,17 +102,35 @@ def digest(
         profile = UserProfile.model_validate_json(profile_path.read_text())
         resume_path = profile.resume_pdf_path
 
+    # Parse --since flag
+    since_dt = None
+    unnotified = True
+    if since:
+        import re
+
+        m = re.match(r"(\d+)d", since)
+        if m:
+            since_dt = datetime.utcnow() - timedelta(days=int(m.group(1)))
+            unnotified = False  # --since overrides the unnotified filter
+        else:
+            console.print("[red]Invalid --since format. Use e.g. '7d' or '30d'.[/red]")
+            raise typer.Exit(1)
+
     # Get top matched jobs
     job_repo = JobRepository()
-    all_jobs = job_repo.list_jobs(matched_only=True, limit=100)
+    all_jobs = job_repo.list_jobs(
+        matched_only=True,
+        unnotified_only=unnotified,
+        since=since_dt,
+        limit=100,
+    )
 
-    candidates = [
-        j for j in all_jobs
-        if j.match_score and j.match_score >= threshold
-    ][:top]
+    candidates = [j for j in all_jobs if j.match_score and j.match_score >= threshold][:top]
 
     if not candidates:
-        console.print(f"[yellow]No jobs above {threshold:.0%} threshold.[/yellow]")
+        console.print(
+            f"[yellow]No {'new ' if unnotified else ''}jobs above {threshold:.0%} threshold.[/yellow]"
+        )
         return
 
     jobs_data = []
@@ -118,22 +144,30 @@ def digest(
                 parts.append(f"${j.salary_max:,}")
             salary = " - ".join(parts)
 
-        jobs_data.append({
-            "title": j.title,
-            "company": j.company,
-            "score": j.match_score,
-            "url": j.url,
-            "location": j.location or "",
-            "clearance": j.clearance_required or "",
-            "salary": salary,
-            "reasoning": j.match_reasoning or "",
-        })
+        jobs_data.append(
+            {
+                "title": j.title,
+                "company": j.company,
+                "score": j.match_score,
+                "url": j.url,
+                "location": j.location or "",
+                "clearance": j.clearance_required or "",
+                "salary": salary,
+                "reasoning": j.match_reasoning or "",
+            }
+        )
 
-    console.print(f"Sending digest with {len(jobs_data)} jobs to {', '.join(notifier.recipients)}...")
+    console.print(
+        f"Sending digest with {len(jobs_data)} jobs to {', '.join(notifier.recipients)}..."
+    )
 
     ok = notifier.send_job_digest(jobs_data, resume_path=resume_path)
     if ok:
-        console.print(f"[green]Digest sent with {len(jobs_data)} matches{'+ resume' if resume_path else ''}![/green]")
+        # Mark these jobs as notified so they won't be sent again
+        job_repo.mark_notified([j.id for j in candidates])
+        console.print(
+            f"[green]Digest sent with {len(jobs_data)} matches{'+ resume' if resume_path else ''}![/green]"
+        )
     else:
         console.print("[red]Failed to send digest. Check SMTP credentials.[/red]")
 
@@ -141,7 +175,6 @@ def digest(
 @app.command()
 def chatid():
     """Helper to find your Telegram chat ID."""
-    settings = get_settings()
     notifier = TelegramNotifier()
 
     if not notifier.bot_token:
@@ -152,6 +185,7 @@ def chatid():
     input()
 
     import httpx
+
     resp = httpx.get(
         f"https://api.telegram.org/bot{notifier.bot_token}/getUpdates",
         timeout=10,
@@ -164,10 +198,12 @@ def chatid():
     data = resp.json()
     results = data.get("result", [])
     if not results:
-        console.print("[yellow]No messages found. Send a message to your bot and try again.[/yellow]")
+        console.print(
+            "[yellow]No messages found. Send a message to your bot and try again.[/yellow]"
+        )
         return
 
     chat_id = results[-1]["message"]["chat"]["id"]
     console.print(f"\n[green]Your chat ID: {chat_id}[/green]")
-    console.print(f"\nAdd this to your .env:")
+    console.print("\nAdd this to your .env:")
     console.print(f"  JOBSENTRY_TELEGRAM_CHAT_ID={chat_id}")

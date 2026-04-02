@@ -28,3 +28,5 @@ class JobListing(BaseModel):
     # AI-computed (populated after matching)
     match_score: float | None = None
     match_reasoning: str | None = None
+    notified_at: datetime | None = None
+    applied_at: datetime | None = None

@@ -2,6 +2,7 @@
 
 import asyncio
 import webbrowser
+from datetime import datetime, timedelta
 from typing import Optional
 
 import typer
@@ -35,9 +36,9 @@ def _run_async(coro):
 async def _search_jobs(board: str, keywords: list[str], location: str | None, pages: int):
     """Run the scraper and return job listings."""
     from jobsentry.automation.browser import BrowserManager
-    from jobsentry.scrapers.clearancejobs import ClearanceJobsScraper  # noqa: ensure registered
-    from jobsentry.scrapers.indeed import IndeedScraper  # noqa: ensure registered
-    from jobsentry.scrapers.linkedin import LinkedInScraper  # noqa: ensure registered
+    from jobsentry.scrapers.clearancejobs import ClearanceJobsScraper  # noqa: F401
+    from jobsentry.scrapers.indeed import IndeedScraper  # noqa: F401
+    from jobsentry.scrapers.linkedin import LinkedInScraper  # noqa: F401
     from jobsentry.scrapers.registry import get_scraper
 
     settings = get_settings()
@@ -56,7 +57,9 @@ async def _search_jobs(board: str, keywords: list[str], location: str | None, pa
 
 @app.command()
 def search(
-    keywords: Optional[str] = typer.Option(None, "--keywords", "-k", help="Search keywords (comma-separated)"),
+    keywords: Optional[str] = typer.Option(
+        None, "--keywords", "-k", help="Search keywords (comma-separated)"
+    ),
     board: str = typer.Option("clearancejobs", "--board", "-b", help="Job board to search"),
     location: Optional[str] = typer.Option(None, "--location", "-l", help="Location filter"),
     pages: int = typer.Option(3, "--pages", "-p", help="Number of pages to scrape"),
@@ -85,7 +88,9 @@ def search(
         jobs = _run_async(_search_jobs(board, kw_list, loc, pages))
 
     if not jobs:
-        console.print("[yellow]No jobs found. Try different keywords or check your connection.[/yellow]")
+        console.print(
+            "[yellow]No jobs found. Try different keywords or check your connection.[/yellow]"
+        )
         return
 
     # Save to database
@@ -101,6 +106,7 @@ def list_jobs(
     source: Optional[str] = typer.Option(None, "--source", "-s", help="Filter by source"),
     matched: bool = typer.Option(False, "--matched", "-m", help="Show only matched jobs"),
     unmatched: bool = typer.Option(False, "--unmatched", "-u", help="Show only unmatched jobs"),
+    applied: bool = typer.Option(False, "--applied", "-a", help="Show only applied jobs"),
     limit: int = typer.Option(25, "--limit", "-n", help="Number of jobs to show"),
 ):
     """List jobs from the database."""
@@ -109,6 +115,7 @@ def list_jobs(
         source=source,
         matched_only=matched,
         unmatched_only=unmatched,
+        applied_only=applied,
         limit=limit,
     )
 
@@ -123,6 +130,7 @@ def list_jobs(
     table.add_column("Location", max_width=20)
     table.add_column("Clearance", max_width=12)
     table.add_column("Score", justify="right", width=6)
+    table.add_column("Status", width=8)
     table.add_column("Source", style="dim", width=14)
 
     for i, job in enumerate(jobs, 1):
@@ -136,6 +144,12 @@ def list_jobs(
             else:
                 score_style = "dim"
 
+        status = ""
+        if job.applied_at:
+            status = "[green]Applied[/green]"
+        elif job.notified_at:
+            status = "[dim]Sent[/dim]"
+
         table.add_row(
             str(i),
             job.title,
@@ -143,6 +157,7 @@ def list_jobs(
             job.location,
             job.clearance_required or "—",
             f"[{score_style}]{score}[/{score_style}]" if score_style else score,
+            status,
             job.source,
         )
 
@@ -193,10 +208,16 @@ def show(
 
     table.add_row("Posted", str(job.posted_date) if job.posted_date else "—")
     table.add_row("Scraped", str(job.scraped_at))
+    if job.notified_at:
+        table.add_row("Notified", str(job.notified_at))
+    if job.applied_at:
+        table.add_row("Applied", str(job.applied_at))
 
     console.print(table)
     console.print()
-    console.print(Panel(job.description[:2000] if job.description else "No description", title="Description"))
+    console.print(
+        Panel(job.description[:2000] if job.description else "No description", title="Description")
+    )
 
 
 @app.command("open")
@@ -220,7 +241,9 @@ def open_job(
 
 @app.command()
 def fetch(
-    source: Optional[str] = typer.Option(None, "--source", "-s", help="Only fetch from this source"),
+    source: Optional[str] = typer.Option(
+        None, "--source", "-s", help="Only fetch from this source"
+    ),
     limit: int = typer.Option(20, "--limit", "-n", help="Number of jobs to fetch details for"),
 ):
     """Fetch full descriptions for jobs that only have summaries."""
@@ -265,9 +288,7 @@ def fetch(
                             j.remote_type = detail.remote_type
                         repo.upsert_job(j)
                         fetched += 1
-                    await BrowserManager.human_delay(
-                        await context.new_page(), 1000, 3000
-                    )
+                    await BrowserManager.human_delay(await context.new_page(), 1000, 3000)
 
                 await bm.save_cookies(src)
 
@@ -281,13 +302,19 @@ def fetch(
         progress.add_task("Fetching job details...", total=None)
         fetched = _run_async(_do_fetch())
 
-    console.print(f"[green]Enriched {fetched}/{len(needs_fetch)} jobs with full descriptions.[/green]")
+    console.print(
+        f"[green]Enriched {fetched}/{len(needs_fetch)} jobs with full descriptions.[/green]"
+    )
 
 
 @app.command()
 def match(
-    limit: int = typer.Option(0, "--limit", "-n", help="Max jobs to score (0 = use daily_match_limit from config)"),
-    threshold: float = typer.Option(0.0, "--threshold", "-t", help="Only show results above this score"),
+    limit: int = typer.Option(
+        0, "--limit", "-n", help="Max jobs to score (0 = use daily_match_limit from config)"
+    ),
+    threshold: float = typer.Option(
+        0.0, "--threshold", "-t", help="Only show results above this score"
+    ),
     rerun: bool = typer.Option(False, "--rerun", help="Re-score already matched jobs"),
 ):
     """AI-match unscored jobs against your profile."""
@@ -299,8 +326,7 @@ def match(
 
     if not settings.anthropic_api_key:
         console.print(
-            "[red]JOBSENTRY_ANTHROPIC_API_KEY not set. "
-            "Add it to .env or export it.[/red]"
+            "[red]JOBSENTRY_ANTHROPIC_API_KEY not set. Add it to .env or export it.[/red]"
         )
         raise typer.Exit(1)
 
@@ -381,8 +407,294 @@ def login(
 
     async def _do_login():
         from jobsentry.automation.browser import BrowserManager
+
         bm = BrowserManager(settings.data_dir, headless=False)
         await bm.interactive_login(urls[board], board)
 
     _run_async(_do_login())
     console.print(f"[green]Cookies saved for {board}.[/green]")
+
+
+@app.command("auto-apply")
+def auto_apply(
+    top: int = typer.Option(5, "--top", "-n", help="Max jobs to apply to"),
+    threshold: float = typer.Option(
+        0.75, "--threshold", "-t", help="Minimum match score to auto-apply"
+    ),
+    board: Optional[str] = typer.Option(
+        None, "--board", "-b", help="Only apply to jobs from this board"
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Show what would be applied to without applying"
+    ),
+):
+    """Auto-apply to top-matched jobs via Easy Apply (Indeed, LinkedIn).
+
+    Only applies to jobs with Easy Apply support. Jobs that require
+    external applications are skipped. Your profile info is used to
+    fill in application forms.
+
+    This is experimental — review your matches first with 'jobs list --matched'.
+    """
+    settings = get_settings()
+    profile = _load_profile()
+    repo = JobRepository()
+
+    # Get top matched, un-applied jobs
+    all_jobs = repo.list_jobs(matched_only=True, limit=100)
+    candidates = [
+        j
+        for j in all_jobs
+        if j.match_score
+        and j.match_score >= threshold
+        and not j.applied_at
+        and j.source in ("indeed", "linkedin")
+        and (not board or j.source == board)
+    ][:top]
+
+    if not candidates:
+        console.print(f"[yellow]No un-applied Easy Apply jobs above {threshold:.0%}.[/yellow]")
+        console.print("[dim]Tip: lower the threshold with --threshold 0.65[/dim]")
+        return
+
+    table = Table(
+        title=f"{'[DRY RUN] ' if dry_run else ''}Auto-Apply Candidates ({len(candidates)})"
+    )
+    table.add_column("#", width=3)
+    table.add_column("Score", justify="right", width=6)
+    table.add_column("Title", max_width=35)
+    table.add_column("Company", max_width=20)
+    table.add_column("Board", width=14)
+
+    for i, j in enumerate(candidates, 1):
+        score_style = "bold green" if j.match_score >= 0.8 else "yellow"
+        table.add_row(
+            str(i),
+            f"[{score_style}]{j.match_score:.0%}[/{score_style}]",
+            j.title,
+            j.company,
+            j.source,
+        )
+    console.print(table)
+
+    if dry_run:
+        console.print(
+            "\n[yellow]Dry run — no applications sent. Remove --dry-run to apply.[/yellow]"
+        )
+        return
+
+    console.print(f"\n[bold]Applying to {len(candidates)} jobs...[/bold]")
+    console.print("[dim]This uses your profile info to fill Easy Apply forms.[/dim]\n")
+
+    from jobsentry.automation.auto_apply import auto_apply_jobs
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        progress.add_task("Auto-applying...", total=None)
+        results = _run_async(auto_apply_jobs(candidates, profile, headless=settings.headless))
+
+    # Display results and update DB
+    success_count = 0
+    for r in results:
+        if r["success"]:
+            repo.mark_applied(r["job_id"])
+            success_count += 1
+            console.print(f"  [green]Applied[/green] — {r['title']} at {r['company']}")
+        else:
+            console.print(
+                f"  [yellow]Skipped[/yellow] — {r['title']} at {r['company']}: {r['error']}"
+            )
+
+    console.print(
+        f"\n[green]Successfully applied to {success_count}/{len(candidates)} jobs.[/green]"
+    )
+    if success_count < len(candidates):
+        console.print("[dim]Skipped jobs may need manual application on the company's site.[/dim]")
+
+
+@app.command()
+def applied(
+    job_num: int = typer.Argument(..., help="Job number from 'jobs list --matched' output"),
+):
+    """Mark a job as applied to track your applications."""
+    repo = JobRepository()
+    jobs = repo.list_jobs(matched_only=True, limit=100)
+
+    if job_num < 1 or job_num > len(jobs):
+        console.print(f"[red]Invalid job number. Valid range: 1-{len(jobs)}[/red]")
+        raise typer.Exit(1)
+
+    job = jobs[job_num - 1]
+
+    if job.applied_at:
+        console.print(f"[yellow]Already marked as applied on {job.applied_at:%Y-%m-%d}.[/yellow]")
+        return
+
+    repo.mark_applied(job.id)
+    console.print(f"[green]Marked as applied:[/green] {job.title} at {job.company}")
+
+
+@app.command()
+def stats():
+    """Show database statistics and score distribution."""
+    repo = JobRepository()
+    s = repo.get_stats()
+
+    console.print(Panel("[bold]JobSentry Statistics[/bold]", style="blue"))
+
+    # Overview
+    overview = Table(show_header=False, box=None, padding=(0, 2))
+    overview.add_column("Metric", style="bold cyan", width=22)
+    overview.add_column("Value", justify="right")
+    overview.add_row("Total jobs", str(s["total"]))
+    overview.add_row("AI matched", str(s["matched"]))
+    overview.add_row("Unmatched", str(s["unmatched"]))
+    overview.add_row("High matches (75%+)", str(s["high_matches"]))
+    overview.add_row("Notified (emailed)", str(s["notified"]))
+    overview.add_row("Applied", str(s["applied"]))
+    overview.add_row("New this week", str(s["recent_7d"]))
+    console.print(overview)
+
+    # Sources breakdown
+    if s["sources"]:
+        console.print()
+        src_table = Table(title="By Source")
+        src_table.add_column("Board", style="bold")
+        src_table.add_column("Jobs", justify="right")
+        for src, count in sorted(s["sources"].items(), key=lambda x: x[1], reverse=True):
+            src_table.add_row(src, str(count))
+        console.print(src_table)
+
+    # Score distribution
+    if s["score_brackets"]:
+        console.print()
+        score_table = Table(title="Score Distribution")
+        score_table.add_column("Range", style="bold")
+        score_table.add_column("Count", justify="right")
+        score_table.add_column("Bar", max_width=30)
+        max_count = max(s["score_brackets"].values()) if s["score_brackets"] else 1
+        for bracket, count in s["score_brackets"].items():
+            bar_len = int((count / max_count) * 25)
+            color = (
+                "green"
+                if "90" in bracket or "75" in bracket
+                else "yellow"
+                if "65" in bracket
+                else "dim"
+            )
+            bar = f"[{color}]{'█' * bar_len}[/{color}]"
+            score_table.add_row(bracket, str(count), bar)
+        console.print(score_table)
+
+
+@app.command()
+def doctor():
+    """Check scraper health — test each board with a quick 1-page scrape."""
+    from jobsentry.scrapers.registry import list_scrapers
+
+    boards = list_scrapers()
+    if not boards:
+        console.print("[red]No scrapers registered.[/red]")
+        return
+
+    console.print(Panel("[bold]Scraper Health Check[/bold]", style="blue"))
+
+    profile = _load_profile()
+    kw_list = profile.desired_titles[:1] if profile.desired_titles else ["analyst"]
+
+    results = []
+
+    async def _check_all():
+        from jobsentry.automation.browser import BrowserManager
+        from jobsentry.scrapers.registry import get_scraper
+
+        settings = get_settings()
+
+        for board in boards:
+            status = {"board": board, "ok": False, "jobs": 0, "error": ""}
+            try:
+                async with BrowserManager(settings.data_dir, headless=True) as bm:
+                    context = await bm.get_context(site=board)
+                    scraper = get_scraper(board, context)
+                    jobs = await scraper.search(keywords=kw_list, pages=1)
+                    status["ok"] = True
+                    status["jobs"] = len(jobs)
+            except Exception as e:
+                status["error"] = str(e)[:80]
+            results.append(status)
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        progress.add_task("Testing scrapers...", total=None)
+        _run_async(_check_all())
+
+    table = Table()
+    table.add_column("Board", style="bold")
+    table.add_column("Status")
+    table.add_column("Jobs Found", justify="right")
+    table.add_column("Notes")
+
+    for r in results:
+        if r["ok"]:
+            status = "[green]OK[/green]"
+            notes = "" if r["jobs"] > 0 else "[yellow]No results (check keywords)[/yellow]"
+        else:
+            status = "[red]FAIL[/red]"
+            notes = f"[red]{r['error']}[/red]"
+        table.add_row(r["board"], status, str(r["jobs"]), notes)
+
+    console.print(table)
+
+    # Config validation
+    console.print()
+    settings = get_settings()
+    checks = [
+        ("Anthropic API key", bool(settings.anthropic_api_key)),
+        ("Email (SMTP)", bool(settings.smtp_username and settings.smtp_password)),
+        ("Telegram", bool(settings.telegram_bot_token and settings.telegram_chat_id)),
+        ("Profile exists", settings.get_profile_path().exists()),
+    ]
+
+    config_table = Table(title="Configuration")
+    config_table.add_column("Setting", style="bold")
+    config_table.add_column("Status")
+    for name, ok in checks:
+        config_table.add_row(
+            name, "[green]Configured[/green]" if ok else "[yellow]Not set[/yellow]"
+        )
+    console.print(config_table)
+
+
+@app.command()
+def prune(
+    days: int = typer.Option(90, "--older-than", "-d", help="Delete jobs older than N days"),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Show what would be deleted without deleting"
+    ),
+):
+    """Remove old jobs from the database."""
+    repo = JobRepository()
+
+    if dry_run:
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        jobs = repo.list_jobs(limit=10000)
+        old = [j for j in jobs if j.scraped_at and j.scraped_at < cutoff]
+        console.print(f"[yellow]Would delete {len(old)} jobs older than {days} days.[/yellow]")
+        if old:
+            for j in old[:10]:
+                console.print(f"  [dim]{j.title} at {j.company} ({j.scraped_at:%Y-%m-%d})[/dim]")
+            if len(old) > 10:
+                console.print(f"  [dim]... and {len(old) - 10} more[/dim]")
+        return
+
+    count = repo.prune_old(days)
+    if count:
+        console.print(f"[green]Deleted {count} jobs older than {days} days.[/green]")
+    else:
+        console.print("[green]No old jobs to prune.[/green]")

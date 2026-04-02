@@ -31,6 +31,18 @@ def get_session() -> Session:
 
 
 def init_db():
-    """Create all tables if they don't exist."""
+    """Create all tables if they don't exist, and migrate schema."""
+    from sqlalchemy import inspect, text
     from jobsentry.db.tables import Base
-    Base.metadata.create_all(get_engine())
+
+    engine = get_engine()
+    Base.metadata.create_all(engine)
+
+    # Add new columns if missing (no alembic, so manual migration)
+    inspector = inspect(engine)
+    columns = [c["name"] for c in inspector.get_columns("jobs")]
+    with engine.begin() as conn:
+        if "notified_at" not in columns:
+            conn.execute(text("ALTER TABLE jobs ADD COLUMN notified_at DATETIME"))
+        if "applied_at" not in columns:
+            conn.execute(text("ALTER TABLE jobs ADD COLUMN applied_at DATETIME"))

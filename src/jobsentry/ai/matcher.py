@@ -101,8 +101,7 @@ def match_jobs(
         jobs_prompt = _build_jobs_prompt(batch)
 
         user_message = (
-            f"## Candidate Profile\n{profile_summary}\n\n"
-            f"## Job Postings to Score\n{jobs_prompt}"
+            f"## Candidate Profile\n{profile_summary}\n\n## Job Postings to Score\n{jobs_prompt}"
         )
 
         try:
@@ -122,8 +121,6 @@ def match_jobs(
         except Exception as e:
             # Log but continue with remaining batches
             for job in batch:
-                all_results.append(
-                    MatchResult(job_id=job.id, score=0.0, reasoning=f"Error: {e}")
-                )
+                all_results.append(MatchResult(job_id=job.id, score=0.0, reasoning=f"Error: {e}"))
 
     return all_results

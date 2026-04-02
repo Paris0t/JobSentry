@@ -4,8 +4,6 @@ import re
 from datetime import datetime, timedelta
 from urllib.parse import quote_plus
 
-from playwright.async_api import BrowserContext
-
 from jobsentry.automation.browser import BrowserManager
 from jobsentry.models.job import JobListing
 from jobsentry.scrapers.base import BaseScraper
@@ -138,8 +136,7 @@ class IndeedScraper(BaseScraper):
 
             # Title
             title_el = card.locator(
-                ".jobTitle, h2.jobTitle, [class*='jobTitle'] span, "
-                "h2 a span, .jcs-JobTitle span"
+                ".jobTitle, h2.jobTitle, [class*='jobTitle'] span, h2 a span, .jcs-JobTitle span"
             ).first
             title = "Unknown"
             if await title_el.count() > 0:
@@ -157,8 +154,7 @@ class IndeedScraper(BaseScraper):
 
             # Location
             location_el = card.locator(
-                "[data-testid='text-location'], .companyLocation, "
-                "div[class*='location']"
+                "[data-testid='text-location'], .companyLocation, div[class*='location']"
             ).first
             location = ""
             if await location_el.count() > 0:
@@ -177,17 +173,14 @@ class IndeedScraper(BaseScraper):
 
             # Description snippet
             desc_el = card.locator(
-                ".job-snippet, [class*='snippet'], "
-                "[class*='description'], .underShelfFooter"
+                ".job-snippet, [class*='snippet'], [class*='description'], .underShelfFooter"
             ).first
             description = ""
             if await desc_el.count() > 0:
                 description = (await desc_el.text_content() or "").strip()
 
             # Posted date
-            date_el = card.locator(
-                ".date, [class*='date'], span[class*='new']"
-            ).first
+            date_el = card.locator(".date, [class*='date'], span[class*='new']").first
             posted_date = None
             if await date_el.count() > 0:
                 date_text = (await date_el.text_content() or "").strip().lower()
@@ -232,9 +225,7 @@ class IndeedScraper(BaseScraper):
             )
             await BrowserManager.human_delay(page, 2000, 4000)
 
-            title_el = page.locator(
-                "h1, .jobsearch-JobInfoHeader-title, [class*='JobTitle']"
-            ).first
+            title_el = page.locator("h1, .jobsearch-JobInfoHeader-title, [class*='JobTitle']").first
             title = (await title_el.text_content() or "Unknown").strip()
 
             company_el = page.locator(
@@ -254,8 +245,7 @@ class IndeedScraper(BaseScraper):
                 location = (await location_el.text_content() or "").strip()
 
             desc_el = page.locator(
-                "#jobDescriptionText, .jobsearch-jobDescriptionText, "
-                "[class*='jobDescription']"
+                "#jobDescriptionText, .jobsearch-jobDescriptionText, [class*='jobDescription']"
             ).first
             description = ""
             if await desc_el.count() > 0:

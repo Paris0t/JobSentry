@@ -72,17 +72,24 @@ def _get_script_path() -> Path:
 @app.command()
 def setup(
     boards: str = typer.Option(
-        "clearancejobs,linkedin", "--boards", "-b",
+        "clearancejobs,linkedin",
+        "--boards",
+        "-b",
         help="Comma-separated list of boards to search",
     ),
     hour: int = typer.Option(8, "--hour", help="Hour to run (0-23)"),
     minute: int = typer.Option(0, "--minute", help="Minute to run (0-59)"),
     frequency: str = typer.Option(
-        "daily", "--frequency", "-f",
-        help="How often: daily, weekdays, twice-daily",
+        "every-5-days",
+        "--frequency",
+        "-f",
+        help="How often: daily, weekdays, twice-daily, every-5-days",
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Show what would be configured without installing"
     ),
 ):
-    """Set up automated daily job searches via cron."""
+    """Set up automated job searches via cron."""
     settings = get_settings()
     settings.ensure_dirs()
     venv_path = _find_venv()
@@ -92,9 +99,7 @@ def setup(
     board_list = [b.strip() for b in boards.split(",")]
     search_lines = []
     for board in board_list:
-        search_lines.append(
-            f'jobsentry jobs search --board {board} >> "$LOG" 2>&1 || true'
-        )
+        search_lines.append(f'jobsentry jobs search --board {board} >> "$LOG" 2>&1 || true')
     search_commands = "\n".join(search_lines)
 
     # Match command (only if API key is set)
@@ -123,32 +128,45 @@ def setup(
     elif frequency == "twice-daily":
         hour2 = (hour + 12) % 24
         cron_schedule = f"{minute} {hour},{hour2} * * *"
+    elif frequency == "every-5-days":
+        cron_schedule = f"{minute} {hour} */5 * *"
     else:
-        console.print(f"[red]Unknown frequency '{frequency}'. Use: daily, weekdays, twice-daily[/red]")
+        console.print(
+            f"[red]Unknown frequency '{frequency}'. Use: daily, weekdays, twice-daily, every-5-days[/red]"
+        )
         raise typer.Exit(1)
 
     cron_line = f"{cron_schedule} {script_path}"
 
+    if dry_run:
+        console.print(
+            Panel("[bold yellow]Dry Run — nothing will be installed[/bold yellow]", style="yellow")
+        )
+        console.print(f"  Schedule:  {cron_schedule} ({frequency})")
+        console.print(f"  Boards:    {', '.join(board_list)}")
+        console.print(f"  Script:    {script_path}")
+        console.print(f"  Logs:      {log_dir}/")
+        console.print(f"\n  Cron line: {cron_line}")
+        console.print("\n[dim]Remove --dry-run to install.[/dim]")
+        return
+
     # Install to crontab
     try:
-        result = subprocess.run(
-            ["crontab", "-l"], capture_output=True, text=True
-        )
+        result = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
         existing = result.stdout if result.returncode == 0 else ""
 
         # Remove old entries
         lines = [
-            l for l in existing.splitlines()
-            if CRON_COMMENT not in l and "jobsentry" not in l and "airecruiter" not in l
+            line
+            for line in existing.splitlines()
+            if CRON_COMMENT not in line and "jobsentry" not in line and "airecruiter" not in line
         ]
         lines.append(CRON_COMMENT)
         lines.append(cron_line)
         lines.append("")  # trailing newline
 
         new_crontab = "\n".join(lines)
-        subprocess.run(
-            ["crontab", "-"], input=new_crontab, text=True, check=True
-        )
+        subprocess.run(["crontab", "-"], input=new_crontab, text=True, check=True)
 
         console.print(Panel("[bold green]Schedule set up successfully[/bold green]", style="green"))
         console.print(f"  Script: {script_path}")
@@ -167,22 +185,19 @@ def setup(
 def remove():
     """Remove the automated search schedule."""
     try:
-        result = subprocess.run(
-            ["crontab", "-l"], capture_output=True, text=True
-        )
+        result = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
         if result.returncode != 0:
             console.print("[yellow]No crontab found.[/yellow]")
             return
 
         lines = [
-            l for l in result.stdout.splitlines()
-            if CRON_COMMENT not in l and "jobsentry" not in l and "airecruiter" not in l
+            line
+            for line in result.stdout.splitlines()
+            if CRON_COMMENT not in line and "jobsentry" not in line and "airecruiter" not in line
         ]
 
         new_crontab = "\n".join(lines) + "\n" if lines else ""
-        subprocess.run(
-            ["crontab", "-"], input=new_crontab, text=True, check=True
-        )
+        subprocess.run(["crontab", "-"], input=new_crontab, text=True, check=True)
 
         # Remove the script
         script_path = _get_script_path()
@@ -204,11 +219,11 @@ def status():
 
     # Check crontab
     try:
-        result = subprocess.run(
-            ["crontab", "-l"], capture_output=True, text=True
-        )
+        result = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
         crontab = result.stdout if result.returncode == 0 else ""
-        cron_lines = [l for l in crontab.splitlines() if "jobsentry" in l or "airecruiter" in l]
+        cron_lines = [
+            line for line in crontab.splitlines() if "jobsentry" in line or "airecruiter" in line
+        ]
     except FileNotFoundError:
         cron_lines = []
 
@@ -220,7 +235,9 @@ def status():
         console.print(Panel("[yellow]No schedule configured[/yellow]", style="yellow"))
         console.print("[dim]Run 'jobsentry schedule setup' to configure.[/dim]")
 
-    console.print(f"\n  Script: {'exists' if script_path.exists() else 'not found'} ({script_path})")
+    console.print(
+        f"\n  Script: {'exists' if script_path.exists() else 'not found'} ({script_path})"
+    )
 
     # Show recent logs
     if log_dir.exists():

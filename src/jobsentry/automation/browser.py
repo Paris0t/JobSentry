@@ -162,10 +162,7 @@ class BrowserManager:
             await self.human_delay(page, 1000, 2000)
 
             # Check if login was successful
-            success = any(
-                indicator in page.url
-                for indicator in config["success_indicators"]
-            )
+            success = any(indicator in page.url for indicator in config["success_indicators"])
 
             if success:
                 # Save fresh cookies

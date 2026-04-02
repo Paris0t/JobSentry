@@ -59,11 +59,7 @@ class TelegramNotifier:
     # --- Formatted message helpers ---
 
     def notify_search_complete(self, board: str, total: int, new: int) -> bool:
-        msg = (
-            f"🔍 <b>Job Search Complete</b>\n"
-            f"Board: {board}\n"
-            f"Found: {total} jobs ({new} new)"
-        )
+        msg = f"🔍 <b>Job Search Complete</b>\nBoard: {board}\nFound: {total} jobs ({new} new)"
         return self.send(msg)
 
     def notify_matches(self, matches: list[dict]) -> bool:
@@ -76,7 +72,7 @@ class TelegramNotifier:
             lines.append(
                 f"• <b>{score}</b> — {m['title']}\n"
                 f"  {m['company']}\n"
-                f"  <a href=\"{m['url']}\">View →</a>"
+                f'  <a href="{m["url"]}">View →</a>'
             )
         return self.send("\n".join(lines))
 
