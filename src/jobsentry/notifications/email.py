@@ -186,7 +186,7 @@ class EmailNotifier:
                 <!-- Job Details -->
                 <td style="padding:20px 8px 16px 4px;vertical-align:top;" valign="top">
                     <a href="{url}" target="_blank"
-                       style="color:#0d1b3e;font-size:16px;font-weight:bold;
+                       style="color:#1565c0;font-size:16px;font-weight:bold;
                               text-decoration:none;line-height:1.3;">
                         {title}
                     </a>
@@ -253,67 +253,24 @@ class EmailNotifier:
               box-shadow:0 2px 12px rgba(13,27,62,0.08);">
 
 <!-- ============================================================ -->
-<!-- HEADER with inline SVG logo                                   -->
+<!-- HEADER — GitHub banner image with shield logo               -->
 <!-- ============================================================ -->
-<tr><td style="background:linear-gradient(135deg,#0d1b3e 0%,#1a237e 100%);
-               padding:0;" bgcolor="#0d1b3e">
-    <!--[if gte mso 9]>
-    <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false"
-            style="width:640px;height:160px;">
-    <v:fill type="gradient" color="#0d1b3e" color2="#1a237e" angle="135"/>
-    <v:textbox inset="0,0,0,0">
-    <![endif]-->
-    <table cellpadding="0" cellspacing="0" border="0" width="100%">
-    <tr>
-        <td style="padding:32px 32px 28px 32px;text-align:center;" align="center">
-            <!-- Inline SVG Shield + Radar Logo -->
-            <table cellpadding="0" cellspacing="0" border="0" align="center"><tr><td style="text-align:center;" align="center">
-            <!--[if !mso]><!-->
-            <svg xmlns="http://www.w3.org/2000/svg" width="60" height="68" viewBox="0 0 60 68" style="display:block;margin:0 auto 12px auto;">
-                <!-- Shield body -->
-                <path d="M30 2 L56 14 L56 34 C56 50 44 62 30 66 C16 62 4 50 4 34 L4 14 Z"
-                      fill="none" stroke="#4fc3f7" stroke-width="2.5" opacity="0.9"/>
-                <path d="M30 6 L52 16 L52 34 C52 48 42 58 30 62 C18 58 8 48 8 34 L8 16 Z"
-                      fill="#0d1b3e" fill-opacity="0.5" stroke="#42a5f5"
-                      stroke-width="1" opacity="0.6"/>
-                <!-- Radar circles -->
-                <circle cx="30" cy="34" r="16" fill="none" stroke="#42a5f5"
-                        stroke-width="0.8" opacity="0.35"/>
-                <circle cx="30" cy="34" r="10" fill="none" stroke="#42a5f5"
-                        stroke-width="0.8" opacity="0.5"/>
-                <circle cx="30" cy="34" r="4" fill="none" stroke="#4fc3f7"
-                        stroke-width="0.8" opacity="0.7"/>
-                <!-- Radar sweep line -->
-                <line x1="30" y1="34" x2="44" y2="24" stroke="#4fc3f7"
-                      stroke-width="1.5" opacity="0.8"/>
-                <!-- Radar blip -->
-                <circle cx="40" cy="28" r="2.5" fill="#4fc3f7" opacity="0.95"/>
-                <circle cx="40" cy="28" r="5" fill="#4fc3f7" opacity="0.25"/>
-                <!-- Crosshairs -->
-                <line x1="30" y1="20" x2="30" y2="48" stroke="#42a5f5"
-                      stroke-width="0.5" opacity="0.3"/>
-                <line x1="16" y1="34" x2="44" y2="34" stroke="#42a5f5"
-                      stroke-width="0.5" opacity="0.3"/>
-            </svg>
-            <!--<![endif]-->
-            </td></tr></table>
-            <table cellpadding="0" cellspacing="0" border="0" align="center"><tr><td style="text-align:center;" align="center">
-                <span style="font-size:28px;font-weight:bold;color:#ffffff;
-                             letter-spacing:1px;line-height:1.2;">
-                    JobSentry
-                </span>
-                <br>
-                <span style="font-size:13px;color:#4fc3f7;letter-spacing:2px;
-                             text-transform:uppercase;line-height:2;">
-                    Your AI Job Intelligence Report
-                </span>
-            </td></tr></table>
-        </td>
-    </tr>
-    </table>
-    <!--[if gte mso 9]>
-    </v:textbox></v:rect>
-    <![endif]-->
+<tr><td style="padding:0;" align="center">
+    <a href="https://github.com/Paris0t/JobSentry" target="_blank"
+       style="text-decoration:none;">
+        <img src="https://raw.githubusercontent.com/Paris0t/JobSentry/main/assets/banner.svg"
+             alt="JobSentry — AI-powered job discovery for cleared professionals"
+             width="640" style="display:block;width:100%;max-width:640px;height:auto;
+                                border-radius:12px 12px 0 0;" />
+    </a>
+</td></tr>
+<!-- Subtitle bar -->
+<tr><td style="background:#0d1b3e;padding:0 0 16px 0;text-align:center;" align="center"
+        bgcolor="#0d1b3e">
+    <span style="font-size:13px;color:#4fc3f7;letter-spacing:2px;
+                 text-transform:uppercase;line-height:2;">
+        Your AI Job Intelligence Report
+    </span>
 </td></tr>
 
 <!-- ============================================================ -->
