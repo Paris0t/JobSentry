@@ -1,0 +1,11 @@
+[Unit]
+Description=Run JobSentry on the 1st, 6th, 11th, 16th, 21st, and 26th at 08:00 and 18:00 UTC
+
+[Timer]
+OnCalendar=*-*-01/5 08:00:00
+OnCalendar=*-*-01/5 18:00:00
+Persistent=true
+RandomizedDelaySec=15min
+
+[Install]
+WantedBy=timers.target

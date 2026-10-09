@@ -76,43 +76,11 @@ su - ${APP_USER} -c "
     mkdir -p ~/.local/share/jobsentry/{cookies,screenshots,logs}
 "
 
-# 6. Create systemd timer (alternative to cron)
-echo "[6/6] Creating systemd timer..."
-cat > /etc/systemd/system/jobsentry.service << 'UNIT'
-[Unit]
-Description=JobSentry automated job search
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-User=jobsentry
-WorkingDirectory=/home/jobsentry/JobSentry
-Environment=HOME=/home/jobsentry
-ExecStart=/bin/bash -c '\
-    source /home/jobsentry/JobSentry/.venv/bin/activate && \
-    jobsentry jobs search -b clearancejobs -p 3 && \
-    jobsentry jobs search -b indeed -p 2 && \
-    jobsentry jobs fetch && \
-    jobsentry jobs match && \
-    jobsentry notify digest || true && \
-    jobsentry notify summary'
-StandardOutput=append:/home/jobsentry/.local/share/jobsentry/logs/service.log
-StandardError=append:/home/jobsentry/.local/share/jobsentry/logs/service.log
-UNIT
-
-cat > /etc/systemd/system/jobsentry.timer << 'TIMER'
-[Unit]
-Description=Run JobSentry every 5 days
-
-[Timer]
-OnBootSec=15min
-OnUnitActiveSec=5d
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-TIMER
+# 6. Install systemd timer
+echo "[6/6] Installing systemd timer..."
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cp "${SCRIPT_DIR}/jobsentry.service" /etc/systemd/system/jobsentry.service
+cp "${SCRIPT_DIR}/jobsentry.timer" /etc/systemd/system/jobsentry.timer
 
 systemctl daemon-reload
 systemctl enable jobsentry.timer

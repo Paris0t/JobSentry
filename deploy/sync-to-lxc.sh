@@ -27,5 +27,11 @@ ssh "root@${LXC_IP}" "chown -R ${LXC_USER}:${LXC_USER} ${REMOTE_DIR}"
 echo "Reinstalling package..."
 ssh "root@${LXC_IP}" "su - ${LXC_USER} -c 'cd ${REMOTE_DIR} && .venv/bin/pip install -e . -q'"
 
+echo "Updating systemd units..."
+scp "$(dirname "$0")/jobsentry.service" "root@${LXC_IP}:/etc/systemd/system/jobsentry.service"
+scp "$(dirname "$0")/jobsentry.timer" "root@${LXC_IP}:/etc/systemd/system/jobsentry.timer"
+ssh "root@${LXC_IP}" "systemctl daemon-reload && systemctl restart jobsentry.timer"
+
 echo "Done! Verify with:"
 echo "  ssh root@${LXC_IP} \"su - ${LXC_USER} -c 'cd ${REMOTE_DIR} && .venv/bin/jobsentry version'\""
+echo "  ssh root@${LXC_IP} 'systemctl list-timers jobsentry.timer'"
